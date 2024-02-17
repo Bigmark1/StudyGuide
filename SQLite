@@ -1,0 +1,117 @@
+import android.content.ContentValues
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
+import android.widget.TextView
+import java.security.Key
+
+class AssignmentDataHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, VERSION) {  
+
+    companion object {
+        private const val DATABASE_NAME = "nameDataBase"  // name your database here
+        private const val VERSION = 1
+        private const val TABLE_NAME = "alltasktable"    // name your table
+
+        private const val COLUMN_ID = "id" // create a column id
+// ADD AN INSTENCE HERE FOR EVERY COLUMN YOUR TABLE IS GOING TO HAVE. EXAMPLES BELOW. 
+        private const val COLUMN_TITLE = "title"       
+        private const val COLUMN_CONTENT = "content"  
+        private const val COLUMN_STATUS = "status"
+    }
+
+    override fun onCreate(db: SQLiteDatabase?) {  // OnCreate method is apart of the SQLiteOpenHelper class. This creates the database. 
+        val query =
+            "CREATE TABLE $TABLE_NAME($COLUMN_ID INTEGER PRIMARY KEY,$COLUMN_TITLE TEXT, $COLUMN_CONTENT TEXT, $COLUMN_STATUS TEXT)"
+        db?.execSQL(query)
+    }
+
+    override fun onUpgrade(db: SQLiteDatabase?, old: Int, new: Int) {
+        val dropTable = "DROP TABLE IF EXISTS $TABLE_NAME"
+        db?.execSQL(dropTable)
+        onCreate(db)
+
+    }
+
+
+    fun insertTask(data: Data){       //This method inserts the data to the chart 
+        val db = writableDatabase     // creates a variable that writes to the database. 
+        val valuez = ContentValues().apply{
+            put(COLUMN_TITLE, data.title )
+            put(COLUMN_CONTENT, data.content)
+            put(COLUMN_STATUS, data.status)
+
+        }
+        db.insert(TABLE_NAME, null, valuez)
+        db.close()       // done forget to close the database when you're done
+
+    }
+
+
+    fun getAllAssignmentTask() : List<Data> {
+        val assignmentTask = mutableListOf<Data>()
+        val db = readableDatabase
+        val query = "SELECT * FROM $TABLE_NAME"
+        val cursor =db.rawQuery(query,null)
+
+        while(cursor.moveToNext()){
+            val id = cursor.getInt((cursor.getColumnIndexOrThrow(COLUMN_ID)))
+            val title = cursor.getString((cursor.getColumnIndexOrThrow(COLUMN_TITLE)))
+            val content = cursor.getString((cursor.getColumnIndexOrThrow(COLUMN_CONTENT)))
+            val status = cursor.getString((cursor.getColumnIndexOrThrow(COLUMN_STATUS)))
+
+            val data = Data(id, title,content,status)
+            assignmentTask.add(data)
+
+        }
+        db.close()
+        return assignmentTask
+
+    }
+    fun completeTask(data: Data){
+        val db = writableDatabase
+        val valuez = ContentValues().apply {
+            put(COLUMN_TITLE, data.title)
+            put(COLUMN_CONTENT, data.content)
+            put(COLUMN_STATUS, data.status)
+        }
+
+            val whereClausez ="$COLUMN_ID = ?"
+            val whereArgs = arrayOf(data.id.toString())
+            db.update(TABLE_NAME, valuez , whereClausez, whereArgs)
+         db.close()
+
+
+    }
+
+    fun getTaskByID(taskId: Int): Data{
+        val db = readableDatabase
+        val query = "SELECT * FROM $TABLE_NAME WHERE $COLUMN_ID = $taskId"
+        val cursor = db.rawQuery(query, null)
+        cursor.moveToFirst()
+
+        val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID))
+        val title = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TITLE))
+        val content = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_CONTENT))
+        val status = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_STATUS))
+
+        cursor.close()
+        db.close()
+        return(Data(id, title, content, status))
+    }
+
+
+
+    fun delelteTask(taskId: Int){
+        val db = writableDatabase
+        val whereClausz ="$COLUMN_ID = ?"
+        val whereArgs = arrayOf(taskId.toString())
+        db.delete(TABLE_NAME, whereClausz, whereArgs)
+        db.close()
+    }
+
+
+}
+
+
+
+
